@@ -1,0 +1,35 @@
+[
+  {
+    "trackingCode": "PKG001",
+    "status": "In Transit",
+    "location": "Distribution Center - New York",
+    "receiverName": "John Doe",
+    "receiverEmail": "john.doe@email.com",
+    "receiverPhone": "+1 (555) 123-4567",
+    "deliveryAddress": "123 Main Street, Apt 4B, New York, NY 10001",
+    "createdAt": "2026-01-06T10:30:00.000Z",
+    "lastUpdated": "2026-01-08T10:30:00.000Z"
+  },
+  {
+    "trackingCode": "PKG002",
+    "status": "Out for Delivery",
+    "location": "Local Hub - Brooklyn",
+    "receiverName": "Jane Smith",
+    "receiverEmail": "jane.smith@email.com",
+    "receiverPhone": "+1 (555) 987-6543",
+    "deliveryAddress": "456 Oak Avenue, Brooklyn, NY 11201",
+    "createdAt": "2026-01-07T09:15:00.000Z",
+    "lastUpdated": "2026-01-08T09:15:00.000Z"
+  },
+  {
+    "trackingCode": "12FA1",
+    "status": "On hold",
+    "location": "Algeria",
+    "receiverName": "Katrina",
+    "receiverEmail": "edwardjonathan@avassant.org",
+    "receiverPhone": "3106433030",
+    "deliveryAddress": "200 N Pacific Coast Highway Suite",
+    "createdAt": "2026-01-08T23:45:01.097Z",
+    "lastUpdated": "2026-01-08T23:45:01.097Z"
+  }
+]

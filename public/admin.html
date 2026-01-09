@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="container">
+    <h1>🔐 Admin Login</h1>
+    <div class="login-form">
+      <input type="password" id="passwordInput" placeholder="Enter admin password">
+      <button onclick="login()">Login</button>
+      <div id="loginError" class="error" style="display:none; margin-top:15px;">Incorrect password!</div>
+    </div>
+  </div>
+
+  <!-- Admin Panel (hidden by default) -->
+  <div id="adminPanel" class="container admin-container" style="display:none;">
+    <h1>🔐 Admin Panel</h1>
+    
+    <div class="section">
+      <h2>Create New Parcel</h2>
+      <div class="form-grid">
+        <div class="form-row">
+          <input type="text" id="newCode" placeholder="Tracking Code *" required>
+          <input type="text" id="newStatus" placeholder="Status (e.g., Processing) *" required>
+        </div>
+        <div class="form-row">
+          <input type="text" id="newLocation" placeholder="Current Location *" required>
+        </div>
+        
+        <div class="form-divider">Receiver Information</div>
+        
+        <div class="form-row">
+          <input type="text" id="newReceiverName" placeholder="Receiver Name *" required>
+          <input type="email" id="newReceiverEmail" placeholder="Email Address *" required>
+        </div>
+        <div class="form-row">
+          <input type="tel" id="newReceiverPhone" placeholder="Phone Number *" required>
+        </div>
+        <div class="form-row">
+          <textarea id="newDeliveryAddress" placeholder="Delivery Address *" rows="2" required></textarea>
+        </div>
+        
+        <button onclick="addParcel()" class="btn-primary">Create Parcel</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>All Parcels</h2>
+      <div id="parcelList"></div>
+    </div>
+
+    <div class="admin-link">
+      <a href="/">← Back to Tracking</a> | 
+      <a href="#" onclick="logout(); return false;">Logout</a>
+    </div>
+  </div>
+
+  <script>
+    // CHANGE THIS PASSWORD TO YOUR OWN!
+    const ADMIN_PASSWORD = "admin123";
+
+    // Check if already logged in
+    if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+      showAdminPanel();
+    }
+
+    function login() {
+      const password = document.getElementById('passwordInput').value;
+      const errorDiv = document.getElementById('loginError');
+      
+      if (password === ADMIN_PASSWORD) {
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        showAdminPanel();
+      } else {
+        errorDiv.style.display = 'block';
+        document.getElementById('passwordInput').value = '';
+      }
+    }
+
+    function showAdminPanel() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      loadParcels();
+    }
+
+    function logout() {
+      sessionStorage.removeItem('adminLoggedIn');
+      location.reload();
+    }
+
+    // Allow Enter key to login
+    document.getElementById('passwordInput')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+
+    async function loadParcels() {
+      try {
+        const response = await fetch('/api/parcels');
+        const parcels = await response.json();
+        
+        const listDiv = document.getElementById('parcelList');
+        
+        if (parcels.length === 0) {
+          listDiv.innerHTML = '<p class="no-parcels">No parcels yet. Create your first parcel above.</p>';
+          return;
+        }
+
+        listDiv.innerHTML = parcels.map(parcel => {
+          const date = new Date(parcel.lastUpdated).toLocaleString();
+          return `
+            <div class="parcel-card">
+              <div class="parcel-header">
+                <div>
+                  <strong>${parcel.trackingCode}</strong>
+                  <span class="parcel-receiver">→ ${parcel.receiverName}</span>
+                </div>
+                <button class="delete-btn" onclick="deleteParcel('${parcel.trackingCode}')">Delete</button>
+              </div>
+              
+              <div class="parcel-details-grid">
+                <div class="detail-group">
+                  <label>Status</label>
+                  <input type="text" id="status-${parcel.trackingCode}" value="${parcel.status}">
+                </div>
+                <div class="detail-group">
+                  <label>Location</label>
+                  <input type="text" id="location-${parcel.trackingCode}" value="${parcel.location}">
+                </div>
+                <div class="detail-group">
+                  <label>Receiver Name</label>
+                  <input type="text" id="name-${parcel.trackingCode}" value="${parcel.receiverName}">
+                </div>
+                <div class="detail-group">
+                  <label>Email</label>
+                  <input type="email" id="email-${parcel.trackingCode}" value="${parcel.receiverEmail}">
+                </div>
+                <div class="detail-group">
+                  <label>Phone</label>
+                  <input type="tel" id="phone-${parcel.trackingCode}" value="${parcel.receiverPhone}">
+                </div>
+                <div class="detail-group full-width">
+                  <label>Delivery Address</label>
+                  <textarea id="address-${parcel.trackingCode}" rows="2">${parcel.deliveryAddress}</textarea>
+                </div>
+              </div>
+              
+              <div class="parcel-actions">
+                <button onclick="updateParcel('${parcel.trackingCode}')">Update Parcel</button>
+                <span class="parcel-time">Last updated: ${date}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading parcels:', error);
+        document.getElementById('parcelList').innerHTML = 
+          '<div class="error">Error loading parcels. Please refresh the page.</div>';
+      }
+    }
+
+    async function addParcel() {
+      const code = document.getElementById('newCode').value.trim();
+      const status = document.getElementById('newStatus').value.trim();
+      const location = document.getElementById('newLocation').value.trim();
+      const receiverName = document.getElementById('newReceiverName').value.trim();
+      const receiverEmail = document.getElementById('newReceiverEmail').value.trim();
+      const receiverPhone = document.getElementById('newReceiverPhone').value.trim();
+      const deliveryAddress = document.getElementById('newDeliveryAddress').value.trim();
+
+      if (!code || !status || !location || !receiverName || !receiverEmail || !receiverPhone || !deliveryAddress) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(receiverEmail)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/parcels', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            trackingCode: code, 
+            status, 
+            location,
+            receiverName,
+            receiverEmail,
+            receiverPhone,
+            deliveryAddress
+          })
+        });
+
+        if (response.ok) {
+          // Clear form
+          document.getElementById('newCode').value = '';
+          document.getElementById('newStatus').value = '';
+          document.getElementById('newLocation').value = '';
+          document.getElementById('newReceiverName').value = '';
+          document.getElementById('newReceiverEmail').value = '';
+          document.getElementById('newReceiverPhone').value = '';
+          document.getElementById('newDeliveryAddress').value = '';
+          
+          loadParcels();
+          alert('✅ Parcel created successfully!\n\nTracking Code: ' + code);
+        } else {
+          const error = await response.json();
+          alert('Error: ' + error.error);
+        }
+      } catch (error) {
+        alert('Error creating parcel. Please try again.');
+        console.error('Error:', error);
+      }
+    }
+
+    async function updateParcel(code) {
+      const status = document.getElementById(`status-${code}`).value.trim();
+      const location = document.getElementById(`location-${code}`).value.trim();
+      const receiverName = document.getElementById(`name-${code}`).value.trim();
+      const receiverEmail = document.getElementById(`email-${code}`).value.trim();
+      const receiverPhone = document.getElementById(`phone-${code}`).value.trim();
+      const deliveryAddress = document.getElementById(`address-${code}`).value.trim();
+
+      if (!status || !location || !receiverName || !receiverEmail || !receiverPhone || !deliveryAddress) {
+        alert('All fields must be filled');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/parcels/${code}/full`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            status, 
+            location,
+            receiverName,
+            receiverEmail,
+            receiverPhone,
+            deliveryAddress
+          })
+        });
+
+        if (response.ok) {
+          loadParcels();
+          alert('✅ Parcel updated successfully!');
+        }
+      } catch (error) {
+        alert('Error updating parcel');
+        console.error('Error:', error);
+      }
+    }
+
+    async function deleteParcel(code) {
+      if (!confirm(`Are you sure you want to delete parcel ${code}?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/parcels/${code}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          loadParcels();
+          alert('✅ Parcel deleted successfully!');
+        }
+      } catch (error) {
+        alert('Error deleting parcel');
+        console.error('Error:', error);
+      }
+    }
+  </script>
+</body>
+</html>
+   

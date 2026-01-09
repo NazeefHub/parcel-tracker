@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Premium Parcel Tracking</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <!-- Animated background particles -->
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
+  <!-- Hero Header -->
+  <div class="hero-header">
+    <div class="hero-content">
+      <div class="logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <rect x="8" y="12" width="32" height="24" rx="2" stroke="currentColor" stroke-width="2"/>
+          <path d="M8 20h32M24 12v24" stroke="currentColor" stroke-width="2"/>
+          <circle cx="24" cy="24" r="3" fill="currentColor"/>
+        </svg>
+        <span>TrackPro</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#track">Track</a>
+        <a href="#features">Features</a>
+        <a href="/admin.html">Admin</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="container main-container">
+    <!-- Stats Banner -->
+    <div class="stats-banner">
+      <div class="stat-item">
+        <div class="stat-number" id="totalParcels">0</div>
+        <div class="stat-label">Parcels Tracked</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="inTransit">0</div>
+        <div class="stat-label">In Transit</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="delivered">0</div>
+        <div class="stat-label">Delivered</div>
+      </div>
+    </div>
+
+    <h1>Track Your Parcel in Real-Time</h1>
+    <p class="subtitle">Enter your tracking code to get instant updates on your delivery</p>
+    
+    <div class="tracking-form">
+      <div class="input-wrapper">
+        <svg class="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M17.5 17.5L13.875 13.875M15.8333 9.16667C15.8333 12.8486 12.8486 15.8333 9.16667 15.8333C5.48477 15.8333 2.5 12.8486 2.5 9.16667C2.5 5.48477 5.48477 2.5 9.16667 2.5C12.8486 2.5 15.8333 5.48477 15.8333 9.16667Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="trackingCode" placeholder="Enter tracking code (e.g., PKG001)">
+      </div>
+      <button onclick="trackParcel()" class="track-btn">
+        <span>Track Package</span>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M4.16667 10H15.8333M15.8333 10L10.8333 5M15.8333 10L10.8333 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Loading Animation -->
+    <div id="loading" class="loading" style="display:none;">
+      <div class="loading-spinner"></div>
+      <p>Locating your parcel...</p>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <!-- Features Section -->
+  <div class="features-section" id="features">
+    <div class="container">
+      <h2 class="section-title">Why Choose TrackPro?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🚀</div>
+          <h3>Real-Time Updates</h3>
+          <p>Get instant notifications about your parcel's journey</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <h3>Live Location</h3>
+          <p>See exactly where your package is on the map</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>Secure Tracking</h3>
+          <p>Your data is encrypted and protected</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3>Mobile Friendly</h3>
+          <p>Track from any device, anywhere</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let map = null;
+    let marker = null;
+
+    // Location coordinates mapping
+    const locationCoordinates = {
+      'New York': [40.7128, -74.0060],
+      'Brooklyn': [40.6782, -73.9442],
+      'Los Angeles': [34.0522, -118.2437],
+      'Chicago': [41.8781, -87.6298],
+      'Houston': [29.7604, -95.3698],
+      'Miami': [25.7617, -80.1918],
+      'San Francisco': [37.7749, -122.4194],
+      'Seattle': [47.6062, -122.3321],
+      'Boston': [42.3601, -71.0589],
+      'Lagos': [6.5244, 3.3792],
+      'default': [40.7128, -74.0060]
+    };
+
+    function getCoordinatesFromLocation(location) {
+      for (let city in locationCoordinates) {
+        if (location.toLowerCase().includes(city.toLowerCase())) {
+          return locationCoordinates[city];
+        }
+      }
+      return locationCoordinates['default'];
+    }
+
+    // Load stats on page load
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/parcels');
+        const parcels = await response.json();
+        
+        document.getElementById('totalParcels').textContent = parcels.length;
+        document.getElementById('inTransit').textContent = parcels.filter(p => p.status.toLowerCase().includes('transit')).length;
+        document.getElementById('delivered').textContent = parcels.filter(p => p.status.toLowerCase().includes('delivered')).length;
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    loadStats();
+
+    async function trackParcel() {
+      const code = document.getElementById('trackingCode').value.trim();
+      const resultDiv = document.getElementById('result');
+      const loadingDiv = document.getElementById('loading');
+      
+      if (!code) {
+        resultDiv.innerHTML = '<div class="error">Please enter a tracking code</div>';
+        return;
+      }
+
+      // Show loading animation
+      loadingDiv.style.display = 'block';
+      resultDiv.innerHTML = '';
+
+      try {
+        // Simulate network delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        const response = await fetch(`/api/track/${code}`);
+        loadingDiv.style.display = 'none';
+        
+        if (response.ok) {
+          const parcel = await response.json();
+          const date = new Date(parcel.lastUpdated).toLocaleString();
+          const createdDate = new Date(parcel.createdAt).toLocaleString();
+          
+          // Get status color and icon
+          const statusConfig = getStatusConfig(parcel.status);
+          
+          // Get coordinates from location
+          const coords = getCoordinatesFromLocation(parcel.location);
+          
+          resultDiv.innerHTML = `
+            <div class="parcel-info animate-in">
+              <div class="success-badge">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Parcel Found!</span>
+              </div>
+
+              <!-- Status Timeline -->
+              <div class="status-timeline">
+                <div class="timeline-item ${parcel.status.toLowerCase().includes('processing') ? 'active' : 'completed'}">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <h4>Processing</h4>
+                    <p>Order received</p>
+                  </div>
+                </div>
+                <div class="timeline-item ${parcel.status.toLowerCase().includes('transit') ? 'active' : (parcel.status.toLowerCase().includes('delivered') ? 'completed' : '')}">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <h4>In Transit</h4>
+                    <p>On the way</p>
+                  </div>
+                </div>
+                <div class="timeline-item ${parcel.status.toLowerCase().includes('delivery') ? 'active' : (parcel.status.toLowerCase().includes('delivered') ? 'completed' : '')}">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <h4>Out for Delivery</h4>
+                    <p>Final mile</p>
+                  </div>
+                </div>
+                <div class="timeline-item ${parcel.status.toLowerCase().includes('delivered') ? 'completed' : ''}">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <h4>Delivered</h4>
+                    <p>Received</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Current Status Card -->
+              <div class="status-card" style="background: ${statusConfig.bgColor}; border-left-color: ${statusConfig.color};">
+                <div class="status-header">
+                  <span class="status-icon">${statusConfig.icon}</span>
+                  <div>
+                    <h3>Current Status</h3>
+                    <p class="status-label" style="color: ${statusConfig.color};">${parcel.status}</p>
+                  </div>
+                </div>
+                <div class="status-details">
+                  <div class="detail-item">
+                    <span class="detail-icon">📍</span>
+                    <span>${parcel.location}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-icon">🕐</span>
+                    <span>${date}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Map Section -->
+              <div class="map-section">
+                <h3 class="section-heading">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M17.5 8.33333C17.5 14.1667 10 19.1667 10 19.1667C10 19.1667 2.5 14.1667 2.5 8.33333C2.5 6.34419 3.29018 4.43655 4.6967 3.03602C6.10322 1.63548 8.01088 0.833328 10 0.833328C11.9891 0.833328 13.8968 1.63548 15.3033 3.03602C16.7098 4.43655 17.5 6.34419 17.5 8.33333Z" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="10" cy="8.33333" r="2.5" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Live Location
+                </h3>
+                <div id="map" class="map-container"></div>
+                <div class="map-info">
+                  <span>📦 Package currently at: <strong>${parcel.location}</strong></span>
+                </div>
+              </div>
+
+              <!-- Info Grid -->
+              <div class="info-grid">
+                <div class="info-card">
+                  <h3>Tracking Information</h3>
+                  <div class="info-row">
+                    <strong>Tracking Code</strong>
+                    <span class="code-badge">${parcel.trackingCode}</span>
+                  </div>
+                  <div class="info-row">
+                    <strong>Created</strong>
+                    <span>${createdDate}</span>
+                  </div>
+                </div>
+
+                <div class="info-card">
+                  <h3>Receiver Details</h3>
+                  <div class="info-row">
+                    <strong>Name</strong>
+                    <span>${parcel.receiverName}</span>
+                  </div>
+                  <div class="info-row">
+                    <strong>Email</strong>
+                    <span>${parcel.receiverEmail}</span>
+                  </div>
+                  <div class="info-row">
+                    <strong>Phone</strong>
+                    <span>${parcel.receiverPhone}</span>
+                  </div>
+                  <div class="info-row full-width">
+                    <strong>Delivery Address</strong>
+                    <span class="address">${parcel.deliveryAddress}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="action-buttons">
+                <button class="btn-secondary" onclick="window.print()">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M5 7V3h10v4M5 17h10M5 13h10v4H5v-4z" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Print Details
+                </button>
+                <button class="btn-secondary" onclick="shareTracking('${parcel.trackingCode}')">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 6.66667C16.3807 6.66667 17.5 5.54738 17.5 4.16667C17.5 2.78595 16.3807 1.66667 15 1.66667C13.6193 1.66667 12.5 2.78595 12.5 4.16667C12.5 5.54738 13.6193 6.66667 15 6.66667Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M5 12.5C6.38071 12.5 7.5 11.3807 7.5 10C7.5 8.61929 6.38071 7.5 5 7.5C3.61929 7.5 2.5 8.61929 2.5 10C2.5 11.3807 3.61929 12.5 5 12.5Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M15 18.3333C16.3807 18.3333 17.5 17.214 17.5 15.8333C17.5 14.4526 16.3807 13.3333 15 13.3333C13.6193 13.3333 12.5 14.4526 12.5 15.8333C12.5 17.214 13.6193 18.3333 15 18.3333Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M7.15833 11.1583L12.85 14.675M12.8417 5.325L7.15833 8.84167" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Share
+                </button>
+              </div>
+            </div>
+          `;
+
+          // Initialize map
+          setTimeout(() => initMap(coords, parcel.location), 100);
+          
+        } else {
+          resultDiv.innerHTML = `
+            <div class="error animate-in">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2"/>
+                <path d="M24 16v12M24 32v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <h3>Parcel Not Found</h3>
+              <p>We couldn't find a parcel with tracking code <strong>${code}</strong></p>
+              <p>Please check the code and try again.</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        loadingDiv.style.display = 'none';
+        resultDiv.innerHTML = '<div class="error animate-in">Error connecting to server. Please try again.</div>';
+        console.error('Tracking error:', error);
+      }
+    }
+
+    function getStatusConfig(status) {
+      const s = status.toLowerCase();
+      if (s.includes('delivered')) {
+        return { icon: '✅', color: '#57f287', bgColor: 'rgba(87, 242, 135, 0.08)' };
+      } else if (s.includes('transit')) {
+        return { icon: '🚚', color: '#5865f2', bgColor: 'rgba(88, 101, 242, 0.08)' };
+      } else if (s.includes('delivery')) {
+        return { icon: '📦', color: '#ffa500', bgColor: 'rgba(255, 165, 0, 0.08)' };
+      } else {
+        return { icon: '⏳', color: '#7289da', bgColor: 'rgba(114, 137, 218, 0.08)' };
+      }
+    }
+
+    function initMap(coords, locationName) {
+      const mapContainer = document.getElementById('map');
+      if (!mapContainer) return;
+
+      if (map) {
+        map.remove();
+      }
+
+      map = L.map('map').setView(coords, 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      const customIcon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div class="marker-pin">📦</div>',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40]
+      });
+
+      marker = L.marker(coords, { icon: customIcon }).addTo(map);
+      marker.bindPopup(`<strong>${locationName}</strong>`).openPopup();
+
+      setTimeout(() => map.invalidateSize(), 100);
+    }
+
+    function shareTracking(code) {
+      const url = `${window.location.origin}/?track=${code}`;
+      if (navigator.share) {
+        navigator.share({
+          title: 'Track Parcel',
+          text: `Track parcel ${code}`,
+          url: url
+        });
+      } else {
+        navigator.clipboard.writeText(url);
+        alert('Tracking link copied to clipboard!');
+      }
+    }
+
+    // Auto-track from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const trackParam = urlParams.get('track');
+    if (trackParam) {
+      document.getElementById('trackingCode').value = trackParam;
+      trackParcel();
+    }
+
+    document.getElementById('trackingCode').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') trackParcel();
+    });
+  </script>
+</body>
+</html>
