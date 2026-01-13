@@ -20,7 +20,7 @@ if (!fs.existsSync(DATA_FILE)) {
   fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
 }
 
-// Read parcels from JSON file
+// Read parcels from JSON file (synchronous for data persistence)
 function readParcels() {
   try {
     const data = fs.readFileSync(DATA_FILE, 'utf8');
@@ -31,7 +31,7 @@ function readParcels() {
   }
 }
 
-// Write parcels to JSON file
+// Write parcels to JSON file (synchronous to ensure data is saved)
 function writeParcels(parcels) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(parcels, null, 2), 'utf8');
@@ -63,12 +63,14 @@ app.get('/api/parcels', (req, res) => {
 app.post('/api/parcels', (req, res) => {
   const parcels = readParcels();
   
+  // Validate required fields
   const { trackingCode, status, location, receiverName, receiverEmail, receiverPhone, deliveryAddress } = req.body;
   
   if (!trackingCode || !status || !location || !receiverName || !receiverEmail || !receiverPhone || !deliveryAddress) {
     return res.status(400).json({ error: 'All fields are required' });
   }
   
+  // Check if tracking code already exists
   if (parcels.find(p => p.trackingCode === trackingCode)) {
     return res.status(400).json({ error: 'Tracking code already exists' });
   }
@@ -92,13 +94,32 @@ app.post('/api/parcels', (req, res) => {
   res.json(newParcel);
 });
 
-// API: Update parcel
+// API: Update parcel status and location
+app.put('/api/parcels/:code', (req, res) => {
+  const parcels = readParcels();
+  const index = parcels.findIndex(p => p.trackingCode === req.params.code);
+  
+  if (index !== -1) {
+    // Update only status and location, keep receiver details
+    parcels[index].status = req.body.status;
+    parcels[index].location = req.body.location;
+    parcels[index].lastUpdated = new Date().toISOString();
+    
+    writeParcels(parcels);
+    console.log('Parcel updated:', req.params.code);
+    res.json(parcels[index]);
+  } else {
+    res.status(404).json({ error: 'Parcel not found' });
+  }
+});
+
+// API: Update full parcel details (for admin editing receiver and sender info)
 app.put('/api/parcels/:code/full', (req, res) => {
   const parcels = readParcels();
   const index = parcels.findIndex(p => p.trackingCode === req.params.code);
   
   if (index !== -1) {
-    const { status, location, receiverName, receiverEmail, receiverPhone, deliveryAddress } = req.body;
+    const { status, location, receiverName, receiverEmail, receiverPhone, deliveryAddress, senderName, senderEmail, senderAddress } = req.body;
     
     parcels[index] = {
       ...parcels[index],
@@ -108,11 +129,14 @@ app.put('/api/parcels/:code/full', (req, res) => {
       receiverEmail,
       receiverPhone,
       deliveryAddress,
+      senderName,
+      senderEmail,
+      senderAddress,
       lastUpdated: new Date().toISOString()
     };
     
     writeParcels(parcels);
-    console.log('Parcel updated:', req.params.code);
+    console.log('Parcel fully updated:', req.params.code);
     res.json(parcels[index]);
   } else {
     res.status(404).json({ error: 'Parcel not found' });
@@ -133,6 +157,13 @@ app.delete('/api/parcels/:code', (req, res) => {
   }
 });
 
+// Graceful shutdown to ensure data is saved
+process.on('SIGINT', () => {
+  console.log('Server shutting down gracefully...');
+  process.exit(0);
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Data file: ${DATA_FILE}`);
 });

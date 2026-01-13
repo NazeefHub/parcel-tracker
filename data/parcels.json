@@ -7,6 +7,9 @@
     "receiverEmail": "john.doe@email.com",
     "receiverPhone": "+1 (555) 123-4567",
     "deliveryAddress": "123 Main Street, Apt 4B, New York, NY 10001",
+    "senderName": "Jane Smith",
+    "senderEmail": "jane.smith@company.com",
+    "senderAddress": "456 Business Ave, Los Angeles, CA 90001",
     "createdAt": "2026-01-06T10:30:00.000Z",
     "lastUpdated": "2026-01-08T10:30:00.000Z"
   },
@@ -18,18 +21,21 @@
     "receiverEmail": "jane.smith@email.com",
     "receiverPhone": "+1 (555) 987-6543",
     "deliveryAddress": "456 Oak Avenue, Brooklyn, NY 11201",
+    "senderName": "Mike Johnson",
+    "senderEmail": "mike.j@store.com",
+    "senderAddress": "789 Warehouse Road, Chicago, IL 60601",
     "createdAt": "2026-01-07T09:15:00.000Z",
     "lastUpdated": "2026-01-08T09:15:00.000Z"
   },
   {
-    "trackingCode": "12FA1",
-    "status": "On hold",
-    "location": "Algeria",
-    "receiverName": "Katrina",
-    "receiverEmail": "edwardjonathan@avassant.org",
+    "trackingCode": "66FA12",
+    "status": "Processing",
+    "location": "Toronto, Canada",
+    "receiverName": "Katiana",
+    "receiverEmail": "katia@gmail.com",
     "receiverPhone": "3106433030",
-    "deliveryAddress": "200 N Pacific Coast Highway Suite",
-    "createdAt": "2026-01-08T23:45:01.097Z",
-    "lastUpdated": "2026-01-08T23:45:01.097Z"
+    "deliveryAddress": "New York USA",
+    "createdAt": "2026-01-13T09:21:06.797Z",
+    "lastUpdated": "2026-01-13T09:21:06.797Z"
   }
 ]

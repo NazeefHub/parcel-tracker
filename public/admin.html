@@ -41,8 +41,27 @@
         <div class="form-row">
           <input type="tel" id="newReceiverPhone" placeholder="Phone Number *" required>
         </div>
+        <div class="form-divider">Receiver Information</div>
+        
+        <div class="form-row">
+          <input type="text" id="newReceiverName" placeholder="Receiver Name *" required>
+          <input type="email" id="newReceiverEmail" placeholder="Email Address *" required>
+        </div>
+        <div class="form-row">
+          <input type="tel" id="newReceiverPhone" placeholder="Phone Number *" required>
+        </div>
         <div class="form-row">
           <textarea id="newDeliveryAddress" placeholder="Delivery Address *" rows="2" required></textarea>
+        </div>
+        
+        <div class="form-divider">Sender Information</div>
+        
+        <div class="form-row">
+          <input type="text" id="newSenderName" placeholder="Sender Name *" required>
+          <input type="email" id="newSenderEmail" placeholder="Sender Email *" required>
+        </div>
+        <div class="form-row">
+          <textarea id="newSenderAddress" placeholder="Sender Address *" rows="2" required></textarea>
         </div>
         
         <button onclick="addParcel()" class="btn-primary">Create Parcel</button>
@@ -147,6 +166,18 @@
                   <label>Delivery Address</label>
                   <textarea id="address-${parcel.trackingCode}" rows="2">${parcel.deliveryAddress}</textarea>
                 </div>
+                <div class="detail-group">
+                  <label>Sender Name</label>
+                  <input type="text" id="sendername-${parcel.trackingCode}" value="${parcel.senderName || ''}">
+                </div>
+                <div class="detail-group">
+                  <label>Sender Email</label>
+                  <input type="email" id="senderemail-${parcel.trackingCode}" value="${parcel.senderEmail || ''}">
+                </div>
+                <div class="detail-group full-width">
+                  <label>Sender Address</label>
+                  <textarea id="senderaddress-${parcel.trackingCode}" rows="2">${parcel.senderAddress || ''}</textarea>
+                </div>
               </div>
               
               <div class="parcel-actions">
@@ -171,16 +202,19 @@
       const receiverEmail = document.getElementById('newReceiverEmail').value.trim();
       const receiverPhone = document.getElementById('newReceiverPhone').value.trim();
       const deliveryAddress = document.getElementById('newDeliveryAddress').value.trim();
+      const senderName = document.getElementById('newSenderName').value.trim();
+      const senderEmail = document.getElementById('newSenderEmail').value.trim();
+      const senderAddress = document.getElementById('newSenderAddress').value.trim();
 
-      if (!code || !status || !location || !receiverName || !receiverEmail || !receiverPhone || !deliveryAddress) {
+      if (!code || !status || !location || !receiverName || !receiverEmail || !receiverPhone || !deliveryAddress || !senderName || !senderEmail || !senderAddress) {
         alert('Please fill in all fields');
         return;
       }
 
       // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(receiverEmail)) {
-        alert('Please enter a valid email address');
+      if (!emailRegex.test(receiverEmail) || !emailRegex.test(senderEmail)) {
+        alert('Please enter valid email addresses');
         return;
       }
 
@@ -195,7 +229,10 @@
             receiverName,
             receiverEmail,
             receiverPhone,
-            deliveryAddress
+            deliveryAddress,
+            senderName,
+            senderEmail,
+            senderAddress
           })
         });
 
@@ -208,6 +245,9 @@
           document.getElementById('newReceiverEmail').value = '';
           document.getElementById('newReceiverPhone').value = '';
           document.getElementById('newDeliveryAddress').value = '';
+          document.getElementById('newSenderName').value = '';
+          document.getElementById('newSenderEmail').value = '';
+          document.getElementById('newSenderAddress').value = '';
           
           loadParcels();
           alert('✅ Parcel created successfully!\n\nTracking Code: ' + code);
@@ -228,8 +268,11 @@
       const receiverEmail = document.getElementById(`email-${code}`).value.trim();
       const receiverPhone = document.getElementById(`phone-${code}`).value.trim();
       const deliveryAddress = document.getElementById(`address-${code}`).value.trim();
+      const senderName = document.getElementById(`sendername-${code}`).value.trim();
+      const senderEmail = document.getElementById(`senderemail-${code}`).value.trim();
+      const senderAddress = document.getElementById(`senderaddress-${code}`).value.trim();
 
-      if (!status || !location || !receiverName || !receiverEmail || !receiverPhone || !deliveryAddress) {
+      if (!status || !location || !receiverName || !receiverEmail || !receiverPhone || !deliveryAddress || !senderName || !senderEmail || !senderAddress) {
         alert('All fields must be filled');
         return;
       }
@@ -244,7 +287,10 @@
             receiverName,
             receiverEmail,
             receiverPhone,
-            deliveryAddress
+            deliveryAddress,
+            senderName,
+            senderEmail,
+            senderAddress
           })
         });
 
@@ -280,4 +326,3 @@
   </script>
 </body>
 </html>
-   
