@@ -459,6 +459,33 @@ button:hover {
   border-color: #57f287;
 }
 
+.timeline-item.on-hold .timeline-dot {
+  background: #ed4245;
+  border-color: #ed4245;
+  box-shadow: 0 0 20px rgba(237, 66, 69, 0.5);
+  animation: pulseWarning 2s infinite;
+}
+
+.timeline-item.on-hold .timeline-content h4 {
+  color: #ed4245;
+  font-weight: 700;
+}
+
+.timeline-item.on-hold .timeline-content p {
+  color: rgba(237, 66, 69, 0.8);
+}
+
+@keyframes pulseWarning {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(237, 66, 69, 0.5);
+  }
+  50% { 
+    transform: scale(1.15);
+    box-shadow: 0 0 30px rgba(237, 66, 69, 0.8);
+  }
+}
+
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }

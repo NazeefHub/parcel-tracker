@@ -204,14 +204,14 @@
                     <p>Order received</p>
                   </div>
                 </div>
-                <div class="timeline-item ${parcel.status.toLowerCase().includes('transit') ? 'active' : (parcel.status.toLowerCase().includes('delivered') ? 'completed' : '')}">
+                <div class="timeline-item ${(parcel.status.toLowerCase().includes('on-hold') || parcel.status.toLowerCase().includes('hold')) ? 'on-hold active' : (parcel.status.toLowerCase().includes('transit') ? 'active' : (parcel.status.toLowerCase().includes('delivered') ? 'completed' : ''))}">
                   <div class="timeline-dot"></div>
                   <div class="timeline-content">
-                    <h4>In Transit</h4>
-                    <p>On the way</p>
+                    <h4>${(parcel.status.toLowerCase().includes('on-hold') || parcel.status.toLowerCase().includes('hold')) ? '⚠️ On-Hold' : 'In Transit'}</h4>
+                    <p>${(parcel.status.toLowerCase().includes('on-hold') || parcel.status.toLowerCase().includes('hold')) ? 'Action required' : 'On the way'}</p>
                   </div>
                 </div>
-                <div class="timeline-item ${parcel.status.toLowerCase().includes('delivery') ? 'active' : (parcel.status.toLowerCase().includes('delivered') ? 'completed' : '')}">
+                <div class="timeline-item ${parcel.status.toLowerCase().includes('delivery') && !parcel.status.toLowerCase().includes('delivered') ? 'active' : (parcel.status.toLowerCase().includes('delivered') ? 'completed' : '')}">
                   <div class="timeline-dot"></div>
                   <div class="timeline-content">
                     <h4>Out for Delivery</h4>
@@ -362,6 +362,8 @@
       const s = status.toLowerCase();
       if (s.includes('delivered')) {
         return { icon: '✅', color: '#57f287', bgColor: 'rgba(87, 242, 135, 0.08)' };
+      } else if (s.includes('on-hold') || s.includes('hold')) {
+        return { icon: '⚠️', color: '#ed4245', bgColor: 'rgba(237, 66, 69, 0.08)' };
       } else if (s.includes('transit')) {
         return { icon: '🚚', color: '#5865f2', bgColor: 'rgba(88, 101, 242, 0.08)' };
       } else if (s.includes('delivery')) {
